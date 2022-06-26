@@ -28,12 +28,12 @@ export class UsersService {
 
       if (user) {
         this.logger.warn(`This email:${email} already exists in DB.`);
-        throw new Error();
+        return new ReturnResponses().emitDBError(
+          `This email:${email} already exists in DB.`,
+        );
       }
     } catch (error) {
-      return new ReturnResponses().emitDBError(
-        `This email:${email} already exists in DB.`,
-      );
+      return new ReturnResponses().emitInternalServerError();
     }
 
     try {
@@ -56,18 +56,33 @@ export class UsersService {
     }
   }
 
-  async signinUser(data): Promise<JWTEncodedToken | HttpException> {
+  async signinUser(data): Promise<Responses> {
     const { email, password } = data;
     try {
       this.logger.info(`Attempting to find User:${email}`);
-      const user = await this.usersModel.findOne({ email });
+      const user = await this.usersModel.findOne({ email, isAvailable: true });
       if (!user) {
         this.logger.warn(`Email:${email} does not exist`);
-        throw new Error();
+        return new ReturnResponses().emitDBError(
+          `Email:${email} does not exist`,
+        );
       }
-      return;
+      this.logger.info(`Checking passwords`);
+      const checkPassword: boolean = await bcrypt.compare(
+        password,
+        user.password,
+      );
+      if (!checkPassword) {
+        this.logger.warn(`Wrong Password while logging in`);
+        return new ReturnResponses().emitUnAuthorized('Wrong credentials');
+      }
+
+      const encodedToken = await this.authenticationService.generateAccessToken(
+        user._id,
+      );
+      return new ReturnResponses().emitSuccess(encodedToken);
     } catch (error) {
-      return new HttpException(`Email:${email} does not exist`, 400);
+      return new ReturnResponses().emitInternalServerError();
     }
   }
 }
