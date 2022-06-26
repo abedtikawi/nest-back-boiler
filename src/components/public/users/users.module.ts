@@ -3,7 +3,7 @@ import { UsersService } from './users.service';
 import { UsersController } from './users.controller';
 import { DatabaseModule } from 'src/databases/mongoDB.module';
 import { usersProviders } from 'src/providers/mongoDB/users.provider';
-import { AuthenticationModule } from '../authentication/authentication.module';
+import { AuthenticationModule } from '../../admin/authentication/authentication.module';
 import { LoggerService } from 'src/config/logger.service';
 
 @Module({

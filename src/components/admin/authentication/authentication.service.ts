@@ -1,16 +1,31 @@
-import { HttpException, Injectable } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
-import { UsersService } from '../users/users.service';
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import { JwtOptionsFactory, JwtService, JwtSignOptions } from '@nestjs/jwt';
+import { ObjectId } from 'mongoose';
+import { LoggerService } from 'src/config/logger.service';
 
 @Injectable()
 export class AuthenticationService {
-  constructor(private readonly jwtService: JwtService) {}
+  constructor(
+    private readonly jwtService: JwtService,
+    private readonly logger: LoggerService,
+  ) {}
 
-  async generateAccessToken(userId: string) {
-    return userId;
-  }
+  async generateAccessToken(userId: ObjectId): Promise<string> {
+    this.logger.info(`Generating encoded Token for user:${userId}`);
 
-  async findUser(userId: string) {
-    return userId;
+    const payload = {
+      user: {
+        id: userId,
+      },
+    };
+    try {
+      const encodedToken: string = await this.jwtService.signAsync(payload, {
+        secret: process.env.ACCESS_TOKEN,
+      });
+      return encodedToken;
+    } catch (error) {
+      this.logger.error(`Internal Server Error: ${error.message}`);
+      throw new InternalServerErrorException();
+    }
   }
 }
