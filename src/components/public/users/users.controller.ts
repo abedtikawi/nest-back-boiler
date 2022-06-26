@@ -1,10 +1,9 @@
 import { UsersService } from './users.service';
-import { Body, Controller, HttpException, Post, Res } from '@nestjs/common';
+import { Body, Controller, Post, Res } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
-import { Users } from 'src/schemas/mongoDB/users.schema';
-import { JWTEncodedToken } from 'src/common/types/token.interface';
 import { Responses } from 'src/common/types/Responses';
 import { Response } from 'express';
+import { SignInDto } from './dto/signin-user.dto';
 
 @Controller('users')
 export class UsersController {
@@ -21,7 +20,12 @@ export class UsersController {
   }
 
   @Post('/signin')
-  async signinUser(@Body() data): Promise<JWTEncodedToken | HttpException> {
-    return await this.usersService.signinUser(data);
+  async signinUser(
+    @Body() data: SignInDto,
+    @Res({ passthrough: true }) response: Response,
+  ): Promise<Responses> {
+    const result = await this.usersService.signinUser(data);
+    response.status(result.errorCode).send(result);
+    return;
   }
 }
